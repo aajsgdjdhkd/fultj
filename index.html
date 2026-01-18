@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>访问统计</title>
+    <script>
+        // 获取URL参数
+        function getUrlParam(name) {
+            var params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+        
+        // 记录访问
+        var device = getUrlParam('device') || 'unknown';
+        var time = new Date().toLocaleString();
+        
+        // 保存到localStorage（简单计数）
+        var count = localStorage.getItem('visit_count') || 0;
+        count = parseInt(count) + 1;
+        localStorage.setItem('visit_count', count);
+        localStorage.setItem('last_device', device);
+        localStorage.setItem('last_time', time);
+        
+        // 也可以发送到服务器（如果需要）
+        // fetch('https://api.example.com/stats', {method: 'POST'})
+    </script>
+</head>
+<body style="display:none;">
+    统计页面
+</body>
+</html>
