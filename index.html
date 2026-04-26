@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>聊天室</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: #1a1a2e;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .chat-container {
+            width: 500px;
+            height: 700px;
+            background: #16213e;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background: #0f3460;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .chat-header h1 {
+            color: #fff;
+            font-size: 24px;
+        }
+        
+        .chat-header p {
+            color: #aaa;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #1a1a2e;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        
+        .message.system {
+            background: #0f3460;
+            color: #ff9800;
+            text-align: center;
+            margin: 10px auto;
+            font-size: 12px;
+        }
+        
+        .message.other {
+            background: #0f3460;
+            color: #fff;
+            margin-right: auto;
+        }
+        
+        .message.self {
+            background: #e94560;
+            color: #fff;
+            margin-left: auto;
+        }
+        
+        .message .time {
+            font-size: 10px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        
+        .chat-input {
+            background: #16213e;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            background: #0f3460;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .chat-input input::placeholder {
+            color: #888;
+        }
+        
+        .chat-input button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            background: #e94560;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .status {
+            padding: 10px;
+            text-align: center;
+            background: #0f3460;
+            font-size: 12px;
+        }
+        
+        .status.connected {
+            color: #4caf50;
+        }
+        
+        .status.disconnected {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>💬 聊天室</h1>
+            <p>TCP Socket 聊天</p>
+        </div>
+        
+        <div class="chat-messages" id="messages"></div>
+        
+        <div class="chat-input">
+            <input type="text" id="input" placeholder="输入消息..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">发送</button>
+        </div>
+        
+        <div class="status disconnected" id="status">⚫ 未连接</div>
+    </div>
+
+    <script>
+        let socket = null;
+        let connected = false;
+        
+        function connect() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = 'status disconnected';
+            statusDiv.innerHTML = '⚫ 连接中...';
+            
+            socket = new WebSocket('ws://' + window.location.hostname + ':8889');
+            
+            socket.onopen = function() {
+                connected = true;
+                statusDiv.className = 'status connected';
+                statusDiv.innerHTML = '🟢 已连接';
+                addMessage('系统', '已连接到聊天室', true);
+            };
+            
+            socket.onmessage = function(event) {
+                addMessage('系统', event.data, true);
+            };
+            
+            socket.onerror = function() {
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = '⚫ 连接失败';
+                addMessage('系统', '连接失败', true);
+            };
+            
+            socket.onclose = function() {
+                connected = false;
+                statusDiv.className = 'status disconnected';
+                statusDiv.innerHTML = '⚫ 已断开';
+                addMessage('系统', '连接已断开', true);
+                
+                //5秒后自动重连
+                setTimeout(function() {
+                    if (!connected) connect();
+                }, 5000);
+            };
+        }
+        
+        function sendMessage() {
+            if (!connected) {
+                addMessage('系统', '未连接到服务器', true);
+                return;
+            }
+            
+            const input = document.getElementById('input');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            socket.send(message);
+            addMessage('我', message, false);
+            input.value = '';
+        }
+        
+        function addMessage(sender, content, isSystem) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2,'0') + ':' + 
+                           now.getMinutes().toString().padStart(2,'0');
+            
+            if (isSystem) {
+                messageDiv.className = 'message system';
+                messageDiv.innerHTML = content;
+            } else if (sender === '我') {
+                messageDiv.className = 'message self';
+                messageDiv.innerHTML = content + '<div class="time">' + timeStr + '</div>';
+            } else {
+                messageDiv.className = 'message other';
+                messageDiv.innerHTML = '<div class="name">' + sender + '</div>' + content + '<div class="time">' + timeStr + '</div>';
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+        
+        //启动连接
+        connect();
+    </script>
+</body>
+</html>
