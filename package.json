@@ -1,11 +1,12 @@
 {
-    "name": "lts",
-    "version": "1.0.0",
-    "main": "server.js",
-    "scripts": {
-        "start": "node server.js"
-    },
-    "dependencies": {
-        "express": "^4.18.2"
-    }
+  "name": "chat-room",
+  "version": "1.0.0",
+  "description": "WebSocket聊天室服务端",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.2"
+  }
 }
